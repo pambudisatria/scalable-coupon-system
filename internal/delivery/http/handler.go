@@ -55,10 +55,37 @@ func (h *CouponHandler) CreateCoupon(c *fiber.Ctx) error {
 	})
 }
 
-// Claim is a placeholder for the claim endpoint
+// Claim handles the coupon claim request
 func (h *CouponHandler) Claim(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-		"message": "Claim logic not implemented",
+	var req struct {
+		UserID     string `json:"user_id"`
+		CouponName string `json:"coupon_name"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if req.UserID == "" || req.CouponName == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user_id and coupon_name are required"})
+	}
+
+	err := h.usecase.ClaimCoupon(req.UserID, req.CouponName)
+	if err != nil {
+		if errors.Is(err, usecase.ErrUserAlreadyClaimed) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": err.Error()})
+		}
+		if errors.Is(err, usecase.ErrCouponNoStock) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": err.Error()})
+		}
+		if errors.Is(err, usecase.ErrCouponNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to claim coupon"})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "coupon claimed successfully",
 	})
 }
 

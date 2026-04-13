@@ -3,27 +3,36 @@ package usecase
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/pambudisatria/scalable-coupon-system/internal/domain"
+	"gorm.io/gorm"
 )
 
 var (
 	ErrCouponAmountInvalid = errors.New("coupon amount must be greater than zero")
 	ErrCouponDuplicate     = errors.New("coupon name already exists")
+	ErrCouponNotFound      = errors.New("coupon not found")
+	ErrCouponNoStock       = errors.New("coupon out of stock")
+	ErrUserAlreadyClaimed  = errors.New("user has already claimed this coupon")
 )
 
 type couponUsecase struct {
+	db         *gorm.DB
 	couponRepo domain.CouponRepository
 	claimRepo  domain.ClaimRepository
 }
 
 // NewCouponUsecase creates a new instance of CouponUsecase
-func NewCouponUsecase(couponRepo domain.CouponRepository, claimRepo domain.ClaimRepository) CouponUsecase {
+func NewCouponUsecase(db *gorm.DB, couponRepo domain.CouponRepository, claimRepo domain.ClaimRepository) CouponUsecase {
 	return &couponUsecase{
+		db:         db,
 		couponRepo: couponRepo,
 		claimRepo:  claimRepo,
 	}
 }
+
+// ... CreateCoupon and other methods ...
 
 func (u *couponUsecase) CreateCoupon(name string, amount int) error {
 	if amount <= 0 {
@@ -51,7 +60,50 @@ func (u *couponUsecase) CreateCoupon(name string, amount int) error {
 }
 
 func (u *couponUsecase) ClaimCoupon(userID string, couponName string) error {
-	return nil // Placeholder for now
+	return u.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Check if user already claimed
+		exists, err := u.claimRepo.ExistsWithTx(tx, userID, couponName)
+		if err != nil {
+			return fmt.Errorf("failed to check claim existence: %w", err)
+		}
+		if exists {
+			return ErrUserAlreadyClaimed
+		}
+
+		// 2. Lock coupon row and check stock
+		coupon, err := u.couponRepo.FindByNameWithLock(tx, couponName)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrCouponNotFound
+			}
+			return fmt.Errorf("failed to find coupon with lock: %w", err)
+		}
+
+		if coupon.RemainingAmount <= 0 {
+			return ErrCouponNoStock
+		}
+
+		// 3. Insert claim
+		claim := &domain.Claim{
+			UserID:     userID,
+			CouponName: couponName,
+		}
+		err = u.claimRepo.CreateWithTx(tx, claim)
+		if err != nil {
+			// Handle unique constraint violation (concurrency safety last defense)
+			// In GORM/Postgres, we check for duplicate key error
+			return fmt.Errorf("failed to create claim: %w", err)
+		}
+
+		// 4. Decrement stock
+		err = u.couponRepo.DecrementStock(tx, couponName)
+		if err != nil {
+			return fmt.Errorf("failed to decrement stock: %w", err)
+		}
+
+		log.Printf("[CONCURRENCY] User %s successfully claimed coupon %s", userID, couponName)
+		return nil
+	})
 }
 
 func (u *couponUsecase) GetCouponStatus(name string) (*domain.Coupon, error) {

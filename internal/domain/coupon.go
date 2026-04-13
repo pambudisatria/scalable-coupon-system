@@ -11,5 +11,7 @@ type Coupon struct {
 type CouponRepository interface {
 	Create(coupon *Coupon) error
 	FindByName(name string) (*Coupon, error)
+	FindByNameWithLock(tx interface{}, name string) (*Coupon, error)
 	UpdateStock(name string, amount int) error
+	DecrementStock(tx interface{}, name string) error
 }
