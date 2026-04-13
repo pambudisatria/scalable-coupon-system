@@ -8,25 +8,13 @@ import (
 	"github.com/pambudisatria/scalable-coupon-system/internal/domain"
 	"github.com/pambudisatria/scalable-coupon-system/internal/pkg/config"
 	repoPostgres "github.com/pambudisatria/scalable-coupon-system/internal/repository/postgres"
+	"github.com/pambudisatria/scalable-coupon-system/internal/usecase"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// couponUsecaseImpl is a dummy implementation of the usecase interface
-type couponUsecaseImpl struct {
-	couponRepo domain.CouponRepository
-	claimRepo  domain.ClaimRepository
-}
-
-func (u *couponUsecaseImpl) ClaimCoupon(userID string, couponName string) error {
-	return nil // Placeholder
-}
-
-func (u *couponUsecaseImpl) GetCouponStatus(name string) (*domain.Coupon, error) {
-	return nil, nil // Placeholder
-}
-
 func main() {
+	// ... (load config, connect db, auto-migrate)
 	// 1. Load Config
 	cfg := config.Load()
 
@@ -47,10 +35,7 @@ func main() {
 	claimRepo := repoPostgres.NewClaimRepository(db)
 
 	// 5. Initialize Usecases (Manual Wiring / DI)
-	couponUsecase := &couponUsecaseImpl{
-		couponRepo: couponRepo,
-		claimRepo:  claimRepo,
-	}
+	couponUsecase := usecase.NewCouponUsecase(couponRepo, claimRepo)
 
 	// 6. Initialize Handlers & Routes
 	app := fiber.New()
