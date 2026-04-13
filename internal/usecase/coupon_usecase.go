@@ -8,4 +8,5 @@ import (
 type CouponUsecase interface {
 	ClaimCoupon(userID string, couponName string) error
 	GetCouponStatus(name string) (*domain.Coupon, error)
+	CreateCoupon(name string, amount int) error
 }
