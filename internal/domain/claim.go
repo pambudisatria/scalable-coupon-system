@@ -14,5 +14,7 @@ type Claim struct {
 // ClaimRepository defines the data access behavior for Claims
 type ClaimRepository interface {
 	Create(claim *Claim) error
+	CreateWithTx(tx interface{}, claim *Claim) error
 	Exists(userID string, couponName string) (bool, error)
+	ExistsWithTx(tx interface{}, userID string, couponName string) (bool, error)
 }

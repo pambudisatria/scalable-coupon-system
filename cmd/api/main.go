@@ -35,7 +35,7 @@ func main() {
 	claimRepo := repoPostgres.NewClaimRepository(db)
 
 	// 5. Initialize Usecases (Manual Wiring / DI)
-	couponUsecase := usecase.NewCouponUsecase(couponRepo, claimRepo)
+	couponUsecase := usecase.NewCouponUsecase(db, couponRepo, claimRepo)
 
 	// 6. Initialize Handlers & Routes
 	app := fiber.New()
