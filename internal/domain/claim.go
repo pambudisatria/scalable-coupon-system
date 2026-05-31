@@ -17,4 +17,5 @@ type ClaimRepository interface {
 	CreateWithTx(tx interface{}, claim *Claim) error
 	Exists(userID string, couponName string) (bool, error)
 	ExistsWithTx(tx interface{}, userID string, couponName string) (bool, error)
+	GetClaimedUsersByCoupon(couponName string) ([]string, error)
 }

@@ -39,3 +39,12 @@ func (r *claimRepository) ExistsWithTx(tx interface{}, userID string, couponName
 	err := r.getDB(tx).Model(&domain.Claim{}).Where("user_id = ? AND coupon_name = ?", userID, couponName).Count(&count).Error
 	return count > 0, err
 }
+
+func (r *claimRepository) GetClaimedUsersByCoupon(couponName string) ([]string, error) {
+	var userIDs []string
+	err := r.db.Model(&domain.Claim{}).Where("coupon_name = ?", couponName).Pluck("user_id", &userIDs).Error
+	if userIDs == nil {
+		userIDs = []string{}
+	}
+	return userIDs, err
+}
