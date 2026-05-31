@@ -53,6 +53,11 @@ func (u *couponUsecase) CreateCoupon(name string, amount int) error {
 
 	err := u.couponRepo.Create(coupon)
 	if err != nil {
+		// Detect duplicate key violation (unique constraint on primary key Name)
+		// This is the last-defense guard for concurrent requests that bypass FindByName
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return ErrCouponDuplicate
+		}
 		return fmt.Errorf("failed to create coupon: %w", err)
 	}
 
