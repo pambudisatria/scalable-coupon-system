@@ -106,6 +106,21 @@ func (u *couponUsecase) ClaimCoupon(userID string, couponName string) error {
 	})
 }
 
-func (u *couponUsecase) GetCouponStatus(name string) (*domain.Coupon, error) {
-	return u.couponRepo.FindByName(name)
+func (u *couponUsecase) GetCouponStatus(name string) (*CouponStatusResponse, error) {
+	coupon, err := u.couponRepo.FindByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, err := u.claimRepo.GetClaimedUsersByCoupon(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CouponStatusResponse{
+		Name:            coupon.Name,
+		Amount:          coupon.Amount,
+		RemainingAmount: coupon.RemainingAmount,
+		ClaimedBy:       claims,
+	}, nil
 }
