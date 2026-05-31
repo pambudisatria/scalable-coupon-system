@@ -44,7 +44,15 @@ func (r *couponRepository) UpdateStock(name string, amount int) error {
 }
 
 func (r *couponRepository) DecrementStock(tx interface{}, name string) error {
-	return r.getDB(tx).Model(&domain.Coupon{}).
+	result := r.getDB(tx).Model(&domain.Coupon{}).
 		Where("name = ? AND remaining_amount > 0", name).
-		Update("remaining_amount", gorm.Expr("remaining_amount - 1")).Error
+		Update("remaining_amount", gorm.Expr("remaining_amount - 1"))
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNoRowsAffected
+	}
+	return nil
 }

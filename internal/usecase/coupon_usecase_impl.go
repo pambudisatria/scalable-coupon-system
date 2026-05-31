@@ -10,11 +10,12 @@ import (
 )
 
 var (
-	ErrCouponAmountInvalid = errors.New("coupon amount must be greater than zero")
-	ErrCouponDuplicate     = errors.New("coupon name already exists")
-	ErrCouponNotFound      = errors.New("coupon not found")
-	ErrCouponNoStock       = errors.New("coupon out of stock")
-	ErrUserAlreadyClaimed  = errors.New("user has already claimed this coupon")
+	ErrCouponAmountInvalid  = errors.New("coupon amount must be greater than zero")
+	ErrCouponDuplicate      = errors.New("coupon name already exists")
+	ErrCouponNotFound       = errors.New("coupon not found")
+	ErrCouponNoStock        = errors.New("coupon out of stock")
+	ErrUserAlreadyClaimed   = errors.New("user has already claimed this coupon")
+	ErrStockDecrementFailed = errors.New("stock decrement had no effect")
 )
 
 type couponUsecase struct {
@@ -106,6 +107,9 @@ func (u *couponUsecase) ClaimCoupon(userID string, couponName string) error {
 		// 4. Decrement stock
 		err = u.couponRepo.DecrementStock(tx, couponName)
 		if err != nil {
+			if errors.Is(err, domain.ErrNoRowsAffected) {
+				return ErrStockDecrementFailed
+			}
 			return fmt.Errorf("failed to decrement stock: %w", err)
 		}
 
