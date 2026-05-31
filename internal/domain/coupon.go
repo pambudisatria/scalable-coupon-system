@@ -1,5 +1,10 @@
 package domain
 
+import "errors"
+
+// Sentinel error when an update did not affect any rows
+var ErrNoRowsAffected = errors.New("update affected no rows")
+
 // Coupon represents the core coupon entity
 type Coupon struct {
 	Name            string `gorm:"primaryKey" json:"name"`
