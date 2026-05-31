@@ -19,9 +19,10 @@ func NewCouponHandler(u usecase.CouponUsecase) *CouponHandler {
 
 // InitRoutes sets up the routes for the coupon handler
 func (h *CouponHandler) InitRoutes(app fiber.Router) {
-	app.Post("/coupons", h.CreateCoupon)
-	app.Post("/coupons/claim", h.Claim)
-	app.Get("/coupons/:name", h.GetStatus)
+	api := app.Group("/api")
+	api.Post("/coupons", h.CreateCoupon)
+	api.Post("/coupons/claim", h.Claim)
+	api.Get("/coupons/:name", h.GetStatus)
 }
 
 // CreateCoupon handles the creation of a new coupon
