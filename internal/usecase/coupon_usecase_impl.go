@@ -92,6 +92,9 @@ func (u *couponUsecase) ClaimCoupon(userID string, couponName string) error {
 		if err != nil {
 			// Handle unique constraint violation (concurrency safety last defense)
 			// In GORM/Postgres, we check for duplicate key error
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return ErrUserAlreadyClaimed
+			}
 			return fmt.Errorf("failed to create claim: %w", err)
 		}
 
